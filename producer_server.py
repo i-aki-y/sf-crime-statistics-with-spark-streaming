@@ -12,14 +12,19 @@ class ProducerServer(KafkaProducer):
 
     #TODO we're generating a dummy data
     def generate_data(self):
+
         with open(self.input_file) as f:
             json_data = json.load(f)
             json_data.sort(key=lambda x: x["call_date_time"])
+            count = 0
             for line in json_data:
                 message = self.dict_to_binary(line)
                 # TODO send the correct data
                 self.send(self.topic, value=message)
-                time.sleep(0.5)
+                time.sleep(0.01)
+                count += 1
+                if count % 500 == 0:
+                    print(line)
 
     # TODO fill this in to return the json dictionary to binary
     def dict_to_binary(self, json_dict):

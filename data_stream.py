@@ -53,21 +53,65 @@ def run_spark_job(spark):
 
     # count the number of original crime type
     agg_df = distinct_table.groupBy(
-        psf.window(distinct_table.call_date_time, "60 minutes", "10 minutes"),
+        psf.window(distinct_table.call_date_time, "24 hours", "60 minutes"),
         distinct_table.original_crime_type_name
-    ).count()
+    ).count().orderBy("window", "count")
 
     # TODO Q1. Submit a screen shot of a batch ingestion of the aggregation
     # TODO write output stream
     query = agg_df \
         .writeStream \
+        .queryName("original_crim_type_counts") \
+        .outputMode("complete") \
+        .format("console") \
+        .start()
+#        .trigger(processingTime="5 seconds") \
+
+    # TODO attach a ProgressReporter
+    #query.awaitTermination()
+
+    #get_min_max_call_times(distinct_table)
+
+    #get_total_stats(distinct_table)
+
+    #get_join(spark, distinct_table)
+
+
+    spark.streams.awaitAnyTermination()
+
+def get_min_max_call_times(df):
+    agg_df = df.groupBy(
+        psf.window(df.call_date_time, "24 hours", "60 minutes"),
+        df.original_crime_type_name
+    ).agg(psf.min(psf.col("call_date_time")), psf.max(psf.col("call_date_time")))
+
+    query = agg_df \
+        .writeStream \
+        .queryName("min_max_times") \
         .outputMode("complete") \
         .format("console") \
         .trigger(processingTime="2 seconds") \
         .start()
 
-    # TODO attach a ProgressReporter
-    #query.awaitTermination()
+    return query
+
+
+def get_total_stats(df):
+    agg_df = df.agg(psf.count(df.call_date_time),
+                    psf.min(df.call_date_time),
+                    psf.max(df.call_date_time))
+
+    query = agg_df \
+        .writeStream \
+        .queryName("total_count") \
+        .outputMode("complete") \
+        .format("console") \
+        .trigger(processingTime="2 seconds") \
+        .start()
+
+    return query
+
+def get_join(spark, df):
 
     # TODO get the right radio code json path
     radio_code_json_filepath = "radio_code.json"
@@ -81,20 +125,18 @@ def run_spark_job(spark):
 
     radio_code_df.printSchema()
 
-    agg_df2 = distinct_table.groupBy(
-        psf.window(distinct_table.call_date_time, "60 minutes", "10 minutes"),
-        distinct_table.disposition
+    agg_df = df.groupBy(
+        psf.window(df.call_date_time, "24 hours", "60 minutes"),
+        df.disposition
     ).count()
 
     # TODO join on disposition column
-    join_query = agg_df2 \
+    join_query = agg_df \
         .join(radio_code_df, "disposition") \
         .writeStream \
+        .queryName("join_query") \
         .outputMode("complete") \
         .format("console").start()
-
-    join_query.awaitTermination()
-    #query.awaitTermination()
 
 
 if __name__ == "__main__":
@@ -105,9 +147,16 @@ if __name__ == "__main__":
         .builder \
         .master("local[*]") \
         .appName("KafkaSparkStructuredStreaming") \
+        .config("spark.streaming.blockInterval", "200ms") \
+        .config("spark.executor.cores", "2") \
+        .config("spark.executor.memory", "1g") \
+        .config("spark.driver.memory", "512m") \
         .getOrCreate()
 
     logger.info("Spark started")
+
+
+    #spark.sparkContext.setLogLevel("WARN")
 
     run_spark_job(spark)
 

@@ -27,49 +27,60 @@ export PATH=$JAVA_HOME/bin:$SPARK_HOME/bin:$SCALA_HOME/bin:$PATH
 ```
 
 
-## Problem and solution
+## Problems and Solutions
 
 ### step 1
 
-*problem*
+#### problem
 
 Take a screenshot of your kafka-consumer-console output. 
 
-*solution*
+#### solution
 
 ![kafka-consumer-console output](./screenshot/step1.png)
 
 ### step 2
 
-*problem*
+#### problem
 
 Take a screenshot of your progress reporter after executing a Spark job.
 
-*solution*
+#### solution
 
 ![progress reporter](./screenshot/step2-report.png)
 
-*problem*
+#### problem
 
 Take a screenshot of the Spark Streaming UI as the streaming continues. 
 
-*solution*
+#### solution
 
-![spark UI](./screenshot/step2-step2-sparkUI.png)
+Note. Since this project use structured streaming, the Spark Streaming UI tab does not appear.
 
+cf. https://knowledge.udacity.com/questions/86980
 
-bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test-1 --from-beginning
+![spark UI](./screenshot/step2-sparkUI.png)
 
+### step 3
 
-offsets.topic.replication.factor=1
+1. How did changing values on the SparkSession property parameters affect the throughput and latency of the data?
+
+*Ans.*
+
+- spark.executor.memory will affect the executor performance and allowing larger memory increases throughput. 
+- spark.driver.memory will affect how many data the driver can process and allowing larger memory increase throughput.
+- spark.executor.cores will affect the number of core used executor and setting larger number improves latency.
+- spark.streaming.blockInterval: will affect the number of tasks and setting smaller interval increases the number of tasks. 
+- 
+cf. https://spark.apache.org/docs/latest/configuration.html#spark-streaming
+
+2. What were the 2-3 most efficient SparkSession property key/value pairs? Through testing multiple variations on values, how can you tell these were the most optimal?
+
+*Ans.*
+I changed some parameters described above and examined `processedRowsPerSecond` in MicroBatchExecutor Report. But I could not observe any difference. 
+
+ - spark.executor.memory: 1g - 512m
+ - spark.driver.memory: 1g - 512m
+ - spark.executor.cores: 1 - 2
+ - spark.streaming.blockInterval: 50ms - 500ms
  
-transaction.state.log.replication.factor=1
-
-transaction.state.log.min.isr=1
-
-
-
-/usr/bin/zookeeper-server-start ./config/zookeeper.properties
-/usr/bin/kafka-server-start ./config/server.properties
-
-spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.3.4 --master local[*] --conf spark.ui.port=3000 data_stream.py
