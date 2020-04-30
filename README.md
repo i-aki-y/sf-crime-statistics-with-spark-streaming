@@ -63,9 +63,11 @@ cf. https://knowledge.udacity.com/questions/86980
 
 ### step 3
 
+*Question 1*
+
 1. How did changing values on the SparkSession property parameters affect the throughput and latency of the data?
 
-*Ans.*
+*Answer*
 
 - spark.executor.memory will affect the executor performance and allowing larger memory increases throughput. 
 - spark.driver.memory will affect how many data the driver can process and allowing larger memory increase throughput.
@@ -74,9 +76,12 @@ cf. https://knowledge.udacity.com/questions/86980
 - 
 cf. https://spark.apache.org/docs/latest/configuration.html#spark-streaming
 
+*Question 2*
+
 2. What were the 2-3 most efficient SparkSession property key/value pairs? Through testing multiple variations on values, how can you tell these were the most optimal?
 
-*Ans.*
+*Answer*
+
 I changed some parameters described above and examined `processedRowsPerSecond` in MicroBatchExecutor Report. But I could not observe any difference. 
 
  - spark.executor.memory: 1g - 512m
